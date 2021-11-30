@@ -1,16 +1,17 @@
+
 import pygame
 import time
-from math import floor
-from math import sin
-from math import cos
+from math import floor, sin, cos
 from enum import Enum
-from pygame import display
-from pygame import mixer
+from pygame import display, mixer
+import multiprocessing
+from joblib import Parallel, delayed
 
 #initialgiasdization
 
 pygame.init()
 screen = pygame.display.set_mode([256, 224])
+screenPixArray = screen.array
 pygame.display.set_caption("Super Mario Kart")
 
 #images
@@ -21,13 +22,17 @@ backgroundSurface = pygame.Surface((1024, 1024))
 backgroundSurface.blit(backgroundImage, (0, 0))
 backgroundTextureColorList = []
 
-#"optimization"
+#"optimization" this turns the image into a massive list, because looking up a list value is faster than looking up a texture
 tempList = []
 for y in range(1024):
     for x in range(1024):
         tempList.append(backgroundSurface.get_at((x,y)))
     backgroundTextureColorList.append(tempList)
     tempList = []
+
+#collisionmap
+#(0,0,0) = track, (255,255,255) = offroad, (127,127,127) = endline, (90,90,90) = coin
+
 
 #repeating texture
 repeatingTexture = pygame.image.load("mariocircuit_oob.png").convert()
@@ -83,8 +88,8 @@ for y in range(704):
     tempList = []
 
 #sounds
-mixer.music.load("mariocircuitmusic_start.mp3")
-mixer.music.play()
+mixer.music.load("mariocircuitmusic_start.ogg")
+mixer.music.play(0)
 
 #Mode 7 transformations
 xPrime = 0
@@ -95,11 +100,11 @@ b = 0.0
 c = 0.0
 d = 1.0
 
-xn = 128
-yn = 112
+h = 792.1 #yeah its weird but its perfectly centered on the starting line
+v = 470.0
 
-h = 0.0
-v = 0.0
+xn = 128 + h
+yn = 112 + v
 
 aChange = 8000
 
@@ -157,6 +162,7 @@ kartState = KartState.SCALE0
 kartAnimationFrame = 0
 
 spriteReversed = 0 # 0 = not reversed, 1 = reversed
+timeAboutToDrift = 0.0
 
 #map
 mapScaling = 0.5
@@ -193,21 +199,23 @@ def calculateTorque():
         torque = -maxTorque
 
 def drawToScreen(destx, desty, samplex, sampley, colorList):
-    screen.set_at((destx, desty), colorList[sampley][samplex])
+    screen.pixel((destx, desty), colorList[sampley][samplex])
+
+numCores = multiprocessing.cpu_count()
 
 startTime = time.time_ns() / 1000000000
-musicLoopTime = startTime
+isLoop = False
 running = True
 while running:
     xPrime = 0
     yPrime = 0
     
-    if(time.time_ns() / 1000000000 - startTime > 36.7):
+    if(time.time_ns() / 1000000000 - startTime > 36.53 and not isLoop):
         mixer.music.stop()
         mixer.music.unload()
-        mixer.music.load("mariocircuitmusic_loop.mp3")
-        mixer.music.play()
-        musicLoopTime = time.time_ns() / 1000000000
+        mixer.music.load("mariocircuitmusic_loop.ogg")
+        mixer.music.play(-1)
+        isLoop = True
         
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -263,21 +271,28 @@ while running:
             
     #draw track
 
+    #probably do something like this https://www.geeksforgeeks.org/multiprocessing-python-set-1/ because this code sucks
+
     for y in range(224 - horizonHeight):
-        scl = aChange / (y+1) / 224
+        scl = aChange / 224 / (y+1)
         a = scl * forwardY * mapScaling #using forwardY because it is already calculated and calculating cos and sin again is a waste
         b = scl * forwardX * mapScaling
-        c = scl * -forwardX * mapScaling
-        d = scl * forwardY * mapScaling
+
+        xPrimebase = a * (h - xn) + b * (y +  v - yn) + xn
+        yPrimebase = -b * (h - xn) + a * (y+ v - yn) + yn
+        
+        #inputs = [a, b]
+
+        #processed_list = Parallel(n_jobs=numCores)(delayed(modeSevenTransformation)(i, inputs) for i in inputs)
 
         for x in range(256):
-            xPrime = floor(a * (x + h - xn) + b * (y + v - yn) + xn)
-            yPrime = floor(c * (x + h - xn) + d * (y + v - yn) + yn)
-            if(xPrime < 1024 and xPrime > 0 and yPrime > 0 and yPrime < 1024):          
+            xPrime = floor(xPrimebase + a * x)
+            yPrime = floor(yPrimebase + -b * x)
+            if(xPrime < 1024 and xPrime > 0 and yPrime > 0 and yPrime < 1024):
                 drawToScreen(x, y + horizonHeight, xPrime, yPrime, backgroundTextureColorList)
             else:
                 drawToScreen(x, y + horizonHeight, xPrime % 8, yPrime % 8, repeatingTextureColorList)
-    
+
     #draw kart
 
     if(torque < 0.01):
@@ -299,26 +314,28 @@ while running:
     if(torque > 0.05):
         kartAnimationFrame = 2
         spriteReversed = 1
+        timeAboutToDrift += deltaTime
     
     if(torque < -0.05):
         kartAnimationFrame = 2
         spriteReversed = 0
+        timeAboutToDrift += deltaTime
 
-    if(torque > 0.09):
-        kartAnimationFrame = 3
-        spriteReversed = 1
+    #if(torque > 0.08):
+    #    kartAnimationFrame = 3
+    #    spriteReversed = 1
     
-    if(torque < -0.9):
-        kartAnimationFrame = 3
-        spriteReversed = 0
+    #if(torque < -0.08):
+    #    kartAnimationFrame = 3
+    #    spriteReversed = 0
 
-    if(torque > 0.15):
-        kartAnimationFrame = 4
-        spriteReversed = 1
+    #if(torque > 0.15):
+    #    kartAnimationFrame = 4
+    #    spriteReversed = 1
     
-    if(torque < -0.15):
-        kartAnimationFrame = 4
-        spriteReversed = 0
+    #if(torque < -0.15):
+    #    kartAnimationFrame = 4
+    #    spriteReversed = 0
 
     kartPosX = 128 - kartSize
     kartPosY = 128 - kartSize
@@ -328,7 +345,7 @@ while running:
         for y in range(kartSize):
             #if marioSpritesSurface.get_at(((kartAnimationFrame * kartSize + x + spriteReversed * (kartSize * 11)), kartState.value * kartSize + y)) !=((0,0,0)):
             if marioTextureColorList[kartState.value * kartSize + y][kartAnimationFrame * kartSize + x + spriteReversed * (kartSize * 11)] != (0,0,0):
-                drawToScreen((kartPosX + x + floor(kartSize/2)), kartPosY + y + floor(kartSize/2), (kartAnimationFrame * kartSize + x + spriteReversed * (kartSize * 11)), kartState.value * kartSize + y, marioTextureColorList)
+                drawToScreen((kartPosX + x + floor(kartSize / 2)), kartPosY + y + floor(kartSize / 2), (kartAnimationFrame * kartSize + x + spriteReversed * (kartSize * 11)), kartState.value * kartSize + y, marioTextureColorList)
 
     display.update()
     deltaTime = (time.time_ns() / 1000000000 - previousTime)
