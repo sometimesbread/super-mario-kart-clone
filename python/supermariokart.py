@@ -1,17 +1,14 @@
-
 import pygame
 import time
 from math import floor, sin, cos
 from enum import Enum
 from pygame import display, mixer
 import multiprocessing
-from joblib import Parallel, delayed
 
-#initialgiasdization
+#initialgiadization
 
 pygame.init()
 screen = pygame.display.set_mode([256, 224])
-screenPixArray = screen.array
 pygame.display.set_caption("Super Mario Kart")
 
 #images
@@ -199,7 +196,7 @@ def calculateTorque():
         torque = -maxTorque
 
 def drawToScreen(destx, desty, samplex, sampley, colorList):
-    screen.pixel((destx, desty), colorList[sampley][samplex])
+    screen.set_at((destx, desty), colorList[sampley][samplex])
 
 numCores = multiprocessing.cpu_count()
 
