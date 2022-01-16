@@ -17,8 +17,8 @@ using namespace std;
 
 int main(void)
 {
-    //mode 7 transformations
-    int xPrime = 0;
+        //mode 7 transformations
+        int xPrime = 0;
     int yPrime = 0;
 
     float a = 1.0f;
@@ -148,6 +148,9 @@ int main(void)
 
         //collision
         //(0,0,0) = track, (255,255,255) = offroad, (127,127,127) = endline, (90,90,90) = coin, (100,100,100) = wall/bounceback, (200,200,200) = block
+        //(44, 44, 44) = checkpoint 1 on track, (77, 77, 77) = checkpoint 1 offroad, (45, 45, 45) = checkpoint 2 on track, (78, 78, 78) = checkpoint 2 offroad
+        //(46, 46, 46) = checkpoint 3 on track, (79, 79, 79) = checkpoint 3 offroad, (47, 47, 47) = checkpoint 4 on track, (80, 80, 80) = checkpoint 4 offroad
+        //(48, 48, 48) = checkpoint 5 on track, (81, 81, 81) = checkpoint 5 offroad
         
         //check if on track
         //holy shit i spent a whole week on this one line aaaaaaaaaaaaaaaaaaaaaa
@@ -171,8 +174,8 @@ int main(void)
             {
                 for(int x = 0; x < 256; x++)
                 {
-                    DrawPixel(x, y, GetColor(hillsColorLookup[hillsColorList[y][abs(static_cast <int>(x + angle * hillTurnSpeed) % hillTextureWidth)]]));
-                    DrawPixel(x, y, GetColor(treesColorLookup[treesColorList[y][abs(static_cast <int>(x + angle * treeTurnSpeed) % hillTextureWidth)]]));
+                    DrawPixel(x, y, GetColor(hillsColorLookup[hillsColorList[y][abs(static_cast<int>(x + angle * hillTurnSpeed) % hillTextureWidth)]]));
+                    DrawPixel(x, y, GetColor(treesColorLookup[treesColorList[y][abs(static_cast<int>(x + angle * treeTurnSpeed) % hillTextureWidth)]]));
                 }
             }
 
