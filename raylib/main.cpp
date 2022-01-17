@@ -11,14 +11,16 @@
 #include "mariocircuit-1collision.h"
 #include "lap.h"
 #include "particles.h"
+#include "mariocircuit-1checkpoints.h"
+#include "numbers.h"
 
 //#include make header file that only stores a 2d array of the image (using the color compression)
 using namespace std;
 
 int main(void)
 {
-        //mode 7 transformations
-        int xPrime = 0;
+    //mode 7 transformations
+    int xPrime = 0;
     int yPrime = 0;
 
     float a = 1.0f;
@@ -100,6 +102,11 @@ int main(void)
     bool drawDirtParticles = false;
     bool drawDriftParticles = false;
 
+    //lap count
+    int currentCheckpoint = 5;
+    int currentLap = -1;
+    int displayedLap = 0;
+
     //map
     float mapScaling = 0.5;
 
@@ -150,16 +157,33 @@ int main(void)
         //(0,0,0) = track, (255,255,255) = offroad, (127,127,127) = endline, (90,90,90) = coin, (100,100,100) = wall/bounceback, (200,200,200) = block
         //(44, 44, 44) = checkpoint 1 on track, (77, 77, 77) = checkpoint 1 offroad, (45, 45, 45) = checkpoint 2 on track, (78, 78, 78) = checkpoint 2 offroad
         //(46, 46, 46) = checkpoint 3 on track, (79, 79, 79) = checkpoint 3 offroad, (47, 47, 47) = checkpoint 4 on track, (80, 80, 80) = checkpoint 4 offroad
-        //(48, 48, 48) = checkpoint 5 on track, (81, 81, 81) = checkpoint 5 offroad
+        //(48, 48, 48) = checkpoint 5 on track, (81, 81, 81) = checkpoint 5 offroad, (43, 43, 43) = checkpoint 0 on track, (76, 76, 76) = checkpoint 0 offroad
         
         //check if on track
         //holy shit i spent a whole week on this one line aaaaaaaaaaaaaaaaaaaaaa
         //thank you to my brother for finding the bug in this one line in 30 seconds. i spent like a week trying to fix the bug and he found it instantly lmao.
-        if(mariocircuit1CollisionColorLookup[mariocircuit1CollisionColorList[128 - (int)floor(xn / 8 - forwardX * kartCollisionOffset)][128 - (int)floor(yn / 8 - forwardY * kartCollisionOffset)]] == 0xffffffff) { velocity *= offroadVelocityMultiplier; drawDirtParticles = true; }
+
+        int currentCollisionColor = mariocircuit1CollisionColorLookup[mariocircuit1CollisionColorList[128 - (int)floor(xn / 8 - forwardX * kartCollisionOffset)][128 - (int)floor(yn / 8 - forwardY * kartCollisionOffset)]];
+        int currentCheckpointColor = mariocircuit1CheckpointColorLookup[mariocircuit1CheckpointColorList[128 - (int)floor(xn / 8 - forwardX * kartCollisionOffset)][128 - (int)floor(yn / 8 - forwardY * kartCollisionOffset)]];
+
+        //this is awesome code. i totally would not get fired if this was done in a professional environment
+        if(currentCollisionColor == 0xffffffff) { velocity *= offroadVelocityMultiplier; drawDirtParticles = true; }
         else { drawDirtParticles = false; }
 
         //check if the player hits a wall
-        if(mariocircuit1CollisionColorLookup[mariocircuit1CollisionColorList[128 - (int)floor(xn / 8 - forwardX * kartCollisionOffset)][128 - (int)floor(yn / 8 - forwardY * kartCollisionOffset)]] == 0x646464ff) { velocity = -velocity * 4; }
+        if(currentCollisionColor == 0x646464ff) { velocity = -velocity * 4; }
+
+        //update current checkpoint
+        if(currentCheckpointColor == 0xa0a0aff) { if(currentCheckpoint == 5) { currentLap++; currentCheckpoint = 0; } }
+        if(currentCheckpointColor == 0x141414ff) { if(currentCheckpoint == 0) { currentCheckpoint = 1; } }
+        if(currentCheckpointColor == 0x1e1e1eff) { if(currentCheckpoint == 1) { currentCheckpoint = 2; } }
+        if(currentCheckpointColor == 0x282828ff) { if(currentCheckpoint == 2) { currentCheckpoint = 3; } }
+        if(currentCheckpointColor == 0x323232ff) { if(currentCheckpoint == 3) { currentCheckpoint = 4; } }
+        if(currentCheckpointColor == 0x3c3c3cff) { if(currentCheckpoint == 0) { currentLap--; currentCheckpoint = 5; } { if(currentCheckpoint == 4) { currentCheckpoint = 5; } } }
+
+        displayedLap = max(displayedLap, currentLap);
+
+        cout << currentLap << " " << currentCheckpoint << endl;
 
         //update mode 7 variables
         v -= forwardY * velocity;
@@ -228,7 +252,7 @@ int main(void)
         if(torque > 0.05) { kartAnimationFrame = 2; spriteReversed = 1; timeAboutToDrift += deltaTime; }
         if(torque < -0.05) { kartAnimationFrame = 2; spriteReversed = 0; timeAboutToDrift += deltaTime; }
 
-        if(!IsKeyDown(KEY_A) || !IsKeyDown(KEY_D)) { timeAboutToDrift = 0; }
+        if(!IsKeyDown(KEY_A) && !IsKeyDown(KEY_D)) { timeAboutToDrift = 0; }
 
         for (int x = 0; x < kartSize; x++)
         {
@@ -254,8 +278,32 @@ int main(void)
                 }
                
         }
-        
-        cout << velocity << endl;
+
+        //hud
+
+        //lap count
+        for(int x = 0; x < 32; x++)
+        {
+            for(int y = 0; y < 8; y++)
+            {
+                //bad way of doubling the size of the text. listen im tired ok
+                DrawPixel(x * 2 + 10, y * 2 + 10, GetColor(lapColorLookup[lapCount[y][x]]));
+                DrawPixel(x * 2 + 1 + 10, y * 2 + 10, GetColor(lapColorLookup[lapCount[y][x]]));
+                DrawPixel(x * 2 + 10, y * 2 + 1 + 10, GetColor(lapColorLookup[lapCount[y][x]]));
+                DrawPixel(x * 2 + 1 + 10, y * 2 + 1 + 10, GetColor(lapColorLookup[lapCount[y][x]]));
+            }
+        }
+        for(int x = 0; x < 8; x++)
+        {
+            for(int y = 0; y < 8; y++)
+            {
+                //bad way of doubling the size of the text. listen im tired ok
+                DrawPixel(x * 2 + 70, y * 2 + 10, GetColor(numbersColorLookup[numbers[y][x + 8 * displayedLap]]));
+                DrawPixel(x * 2 + 1 + 70, y * 2 + 10, GetColor(numbersColorLookup[numbers[y][x + 8 * displayedLap]]));
+                DrawPixel(x * 2 + 70, y * 2 + 1 + 10, GetColor(numbersColorLookup[numbers[y][x + 8 * displayedLap]]));
+                DrawPixel(x * 2 + 1 + 70, y * 2 + 1 + 10, GetColor(numbersColorLookup[numbers[y][x + 8 * displayedLap]]));
+            }
+        }
 
         EndDrawing();
         
