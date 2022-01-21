@@ -54,8 +54,8 @@ int main(void)
     const float offroadVelocityMultiplier = 0.75f;
 
     float torque = 0.0f;
-    const float torqueAcceleration = 0.06f;
-    const float maxTorque = 0.08f;
+    float torqueAcceleration = 0.0375f;
+    const float maxTorque = 0.06f;
     const float torqueDrag = 0.015f;
 
     bool drifting = false;
