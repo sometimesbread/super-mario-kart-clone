@@ -29,6 +29,9 @@ int main(void)
     float h = 315.5f; //yeah its weird but its perfectly centered on the starting line
     float v = 808.0f;
 
+    float finishedH = 0.0f;
+    float finishedV = 0.0f;
+
     float xn = 128.0f + h;
     float yn = 112.0f + v;
 
@@ -58,7 +61,7 @@ int main(void)
     const float maxTorque = 0.06f;
     const float torqueDrag = 0.015f;
 
-    bool drifting = false;
+    bool hasFinishedRace = false;
 
     const float kartCollisionOffset = -0.5f;
 
@@ -104,7 +107,7 @@ int main(void)
 
     //lap count
     int currentCheckpoint = 5;
-    int currentLap = -1;
+    int currentLap = 4;
     int displayedLap = 0;
 
     //map
@@ -129,12 +132,12 @@ int main(void)
     while (!WindowShouldClose())
     {
         //update up/down velocity
-        if(IsKeyDown(KEY_W)) { velocity += acceleration; }
-        if(IsKeyDown(KEY_S)) { velocity -= acceleration; }
+        if(IsKeyDown(KEY_W) && !hasFinishedRace) { velocity += acceleration; }
+        if(IsKeyDown(KEY_S) && !hasFinishedRace) { velocity -= acceleration; }
         
         //update left/right turning
-        if(IsKeyDown(KEY_A)) { torque += (torqueAcceleration * std::min(velocity, 1.0f)); }
-        if(IsKeyDown(KEY_D)) { torque -= (torqueAcceleration * std::min(velocity, 1.0f)); }
+        if(IsKeyDown(KEY_A) && !hasFinishedRace) { torque += (torqueAcceleration * std::min(velocity, 1.0f)); }
+        if(IsKeyDown(KEY_D) && !hasFinishedRace) { torque -= (torqueAcceleration * std::min(velocity, 1.0f)); }
 
         //clamp velocity and make it move toward zero
         if(velocity < 0) { velocity += drag; }
@@ -181,9 +184,27 @@ int main(void)
         if(currentCheckpointColor == 0x323232ff) { if(currentCheckpoint == 3) { currentCheckpoint = 4; } }
         if(currentCheckpointColor == 0x3c3c3cff) { if(currentCheckpoint == 0) { currentLap--; currentCheckpoint = 5; } { if(currentCheckpoint == 4) { currentCheckpoint = 5; } } }
 
+        if(currentLap == 5)
+        {
+            if(!hasFinishedRace)
+            {
+                finishedH = h;
+                finishedV = v;
+                hasFinishedRace = true;
+            }
+            h = finishedH;
+            v = finishedV;
+            
+        }
+        if(hasFinishedRace)
+        {
+            kartPosY += 2;
+        }
+
+
         displayedLap = max(displayedLap, currentLap);
 
-        cout << currentLap << " " << currentCheckpoint << endl;
+        cout << currentLap << endl;
 
         //update mode 7 variables
         v -= forwardY * velocity;
