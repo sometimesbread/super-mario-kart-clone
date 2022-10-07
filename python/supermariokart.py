@@ -198,8 +198,6 @@ def calculateTorque():
 def drawToScreen(destx, desty, samplex, sampley, colorList):
     screen.set_at((destx, desty), colorList[sampley][samplex])
 
-numCores = multiprocessing.cpu_count()
-
 startTime = time.time_ns() / 1000000000
 isLoop = False
 running = True

@@ -58,6 +58,7 @@ int main(void)
 
     float torque = 0.0f;
     float torqueAcceleration = 0.0375f;
+    float turnEpsilon = 0.03;
     const float maxTorque = 0.06f;
     const float torqueDrag = 0.015f;
 
@@ -107,7 +108,7 @@ int main(void)
 
     //lap count
     int currentCheckpoint = 5;
-    int currentLap = 4;
+    int currentLap = 0;
     int displayedLap = 0;
 
     //map
@@ -136,8 +137,8 @@ int main(void)
         if(IsKeyDown(KEY_S) && !hasFinishedRace) { velocity -= acceleration; }
         
         //update left/right turning
-        if(IsKeyDown(KEY_A) && !hasFinishedRace) { torque += (torqueAcceleration * std::min(velocity, 1.0f)); }
-        if(IsKeyDown(KEY_D) && !hasFinishedRace) { torque -= (torqueAcceleration * std::min(velocity, 1.0f)); }
+        if(IsKeyDown(KEY_A) && !hasFinishedRace) { torque += (torqueAcceleration * max(velocity, 1.0f)); }
+        if(IsKeyDown(KEY_D) && !hasFinishedRace) { torque -= (torqueAcceleration * max(velocity, 1.0f)); }
 
         //clamp velocity and make it move toward zero
         if(velocity < 0) { velocity += drag; }
@@ -146,6 +147,7 @@ int main(void)
         if(velocity < -maxVelocity) { velocity = -maxVelocity; }
         
         //clamp turning force and make it move toward zero
+        //WHAT IS THIS
         if(torque > 0) { torque -= torqueDrag; }
         if(torque < 0) { torque += torqueDrag; }
         if(torque < 0.02 && torque > -0.02) { torque = 0.0; } 
@@ -163,11 +165,11 @@ int main(void)
         //(48, 48, 48) = checkpoint 5 on track, (81, 81, 81) = checkpoint 5 offroad, (43, 43, 43) = checkpoint 0 on track, (76, 76, 76) = checkpoint 0 offroad
         
         //check if on track
-        //holy shit i spent a whole week on this one line aaaaaaaaaaaaaaaaaaaaaa
+        //this line took a whole week to fix aaaaaaaaaaaaaaaaaaaaaaaaaaaa
         //thank you to my brother for finding the bug in this one line in 30 seconds. i spent like a week trying to fix the bug and he found it instantly lmao.
 
-        int currentCollisionColor = mariocircuit1CollisionColorLookup[mariocircuit1CollisionColorList[128 - (int)floor(xn / 8 - forwardX * kartCollisionOffset)][128 - (int)floor(yn / 8 - forwardY * kartCollisionOffset)]];
-        int currentCheckpointColor = mariocircuit1CheckpointColorLookup[mariocircuit1CheckpointColorList[128 - (int)floor(xn / 8 - forwardX * kartCollisionOffset)][128 - (int)floor(yn / 8 - forwardY * kartCollisionOffset)]];
+        unsigned int currentCollisionColor = mariocircuit1CollisionColorLookup[mariocircuit1CollisionColorList[128 - (int)floor(xn / 8 - forwardX * kartCollisionOffset)][128 - (int)floor(yn / 8 - forwardY * kartCollisionOffset)]];
+        unsigned int currentCheckpointColor = mariocircuit1CheckpointColorLookup[mariocircuit1CheckpointColorList[128 - (int)floor(xn / 8 - forwardX * kartCollisionOffset)][128 - (int)floor(yn / 8 - forwardY * kartCollisionOffset)]];
 
         //this is awesome code. i totally would not get fired if this was done in a professional environment
         if(currentCollisionColor == 0xffffffff) { velocity *= offroadVelocityMultiplier; drawDirtParticles = true; }
