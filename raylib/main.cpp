@@ -46,8 +46,10 @@ int main(void)
     //kart physics
 
     float angle = 4.71238897f;
+    float modAngle = angle;
     float forwardX = 0.0f;
     float forwardY = 0.0f;
+    float rotationEpsilon = 0.03f;
 
     float velocity = 0.0f;
     const float acceleration = 0.25f;
@@ -58,7 +60,6 @@ int main(void)
 
     float torque = 0.0f;
     float torqueAcceleration = 0.0375f;
-    float turnEpsilon = 0.03;
     const float maxTorque = 0.06f;
     const float torqueDrag = 0.015f;
 
@@ -88,6 +89,9 @@ int main(void)
     int kartPosX = 128;
     int kartPosY = 0;
     int kartSize = 64;
+    int kartOffsetYForFinish = 0;
+    float angleReversedForFinish;
+    bool isReversed = false;
     int halfKartSize = kartSize >> 1;
 
     KartState kartState = SCALE0;
@@ -108,8 +112,8 @@ int main(void)
 
     //lap count
     int currentCheckpoint = 5;
-    int currentLap = 0;
-    int displayedLap = 0;
+    int currentLap = 4;
+    int displayedLap = 4;
 
     //map
     float mapScaling = 0.5;
@@ -154,6 +158,9 @@ int main(void)
         if(torque > maxTorque) { torque = maxTorque; }
         if(torque < -maxTorque) { torque = -maxTorque; }
 
+        //set modAngle
+        modAngle = fmod(angle, 6.28319f);
+
         //calculate these vectors. thank you random man on stackoverflow for this code
         forwardX = sin(angle);
         forwardY = cos(angle);
@@ -186,27 +193,33 @@ int main(void)
         if(currentCheckpointColor == 0x323232ff) { if(currentCheckpoint == 3) { currentCheckpoint = 4; } }
         if(currentCheckpointColor == 0x3c3c3cff) { if(currentCheckpoint == 0) { currentLap--; currentCheckpoint = 5; } { if(currentCheckpoint == 4) { currentCheckpoint = 5; } } }
 
+        
         if(currentLap == 5)
         {
             if(!hasFinishedRace)
             {
-                finishedH = h;
-                finishedV = v;
                 hasFinishedRace = true;
+                angleReversedForFinish = angle - 3.14159f;
             }
-            h = finishedH;
-            v = finishedV;
             
         }
         if(hasFinishedRace)
         {
-            kartPosY += 2;
+            if(!isReversed)
+            {
+                angle += 0.03f;
+                if(modAngle < angleReversedForFinish + rotationEpsilon && modAngle > angleReversedForFinish - rotationEpsilon) { isReversed = true; }
+            }
+            else
+            {
+                kartOffsetYForFinish -= 3;
+            }
         }
 
 
         displayedLap = max(displayedLap, currentLap);
 
-        cout << currentLap << endl;
+        
 
         //update mode 7 variables
         v -= forwardY * velocity;
@@ -281,7 +294,7 @@ int main(void)
         {
             for (int y = 0; y < kartSize; y++)
             {
-                DrawPixel((kartPosX - halfKartSize) + x, (kartPosY - halfKartSize) + y + (112 + halfKartSize), GetColor(marioSpritesheetColorLookup[marioSpritesheetColorList[kartState * kartSize + y][kartAnimationFrame * kartSize + x + (spriteReversed * kartSize * 11)]]));
+                DrawPixel((kartPosX - halfKartSize) + x, (kartPosY - halfKartSize + kartOffsetYForFinish) + y + (112 + halfKartSize), GetColor(marioSpritesheetColorLookup[marioSpritesheetColorList[kartState * kartSize + y][kartAnimationFrame * kartSize + x + (spriteReversed * kartSize * 11)]]));
             }
         }
 
