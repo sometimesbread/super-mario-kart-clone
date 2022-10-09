@@ -90,9 +90,8 @@ int main(void)
     int kartPosY = 0;
     int kartSize = 64;
     int kartOffsetYForFinish = 0;
-    float angleReversedForFinish;
+    float finishAngle = 0.0f;
     bool isReversed = false;
-    int halfKartSize = kartSize >> 1;
 
     KartState kartState = SCALE0;
     int kartAnimationFrame = 0;
@@ -192,14 +191,13 @@ int main(void)
         if(currentCheckpointColor == 0x282828ff) { if(currentCheckpoint == 2) { currentCheckpoint = 3; } }
         if(currentCheckpointColor == 0x323232ff) { if(currentCheckpoint == 3) { currentCheckpoint = 4; } }
         if(currentCheckpointColor == 0x3c3c3cff) { if(currentCheckpoint == 0) { currentLap--; currentCheckpoint = 5; } { if(currentCheckpoint == 4) { currentCheckpoint = 5; } } }
-
         
         if(currentLap == 5)
         {
             if(!hasFinishedRace)
             {
                 hasFinishedRace = true;
-                angleReversedForFinish = angle - 3.14159f;
+                finishAngle = angle;
             }
             
         }
@@ -207,19 +205,21 @@ int main(void)
         {
             if(!isReversed)
             {
+                //turn around
                 angle += 0.03f;
-                if(modAngle < angleReversedForFinish + rotationEpsilon && modAngle > angleReversedForFinish - rotationEpsilon) { isReversed = true; }
+                if(modAngle < (finishAngle - 3.14159f) + rotationEpsilon && modAngle > (finishAngle - 3.14159f) - rotationEpsilon) { isReversed = true; }
+                kartAnimationFrame = (int)abs(round((finishAngle - angle) / 0.2855995455f));
+                spriteReversed = 0;
+                cout << (int)abs(round((finishAngle - angle) / 0.2855995455f)) << endl;
             }
             else
             {
+                //rise into air
                 kartOffsetYForFinish -= 3;
             }
         }
 
-
         displayedLap = max(displayedLap, currentLap);
-
-        
 
         //update mode 7 variables
         v -= forwardY * velocity;
@@ -232,7 +232,7 @@ int main(void)
             //draw horizon/bg
             for (int y = 0; y < horizonHeight; y++)
             {
-                for(int x = 0; x < 256; x++)
+                for(int x = 0; x < screenWidth; x++)
                 {
                     DrawPixel(x, y, GetColor(hillsColorLookup[hillsColorList[y][abs(static_cast<int>(x + angle * hillTurnSpeed) % hillTextureWidth)]]));
                     DrawPixel(x, y, GetColor(treesColorLookup[treesColorList[y][abs(static_cast<int>(x + angle * treeTurnSpeed) % hillTextureWidth)]]));
@@ -240,10 +240,10 @@ int main(void)
             }
 
             //draw track
-            for (int y = 0; y < 224 - horizonHeight; y++)
+            for (int y = 0; y < screenHeight - horizonHeight; y++)
             { 
                 //calculate depth
-                float scl = aChange / 224 / (y+1);
+                float scl = aChange / screenHeight / (y+1);
                 //float scl = 1;
                 a = scl * forwardY * mapScaling; //using forwardY because it is already calculated and calculating cos and sin again is a waste
                 b = scl * forwardX * mapScaling;
@@ -252,7 +252,7 @@ int main(void)
                 float xPrimebase = a * (h - xn) + b * (y +  v - yn) + xn;
                 float yPrimebase = -b * (h - xn) + a * (y + v - yn) + yn;
 
-                for (int x = 0; x < 256; x++)
+                for (int x = 0; x < screenWidth; x++)
                 {
                     xPrime = floor(xPrimebase + a * x);
                     yPrime = floor(yPrimebase + -b * x);
@@ -278,15 +278,18 @@ int main(void)
         if(fmod(accumulatedRotation, 7.5) > 3.75) { marioSpritesheetColorLookup[10] = rotatedWheelColor; kartPosY = wiggledKartPos; }
         else { marioSpritesheetColorLookup[10] = originalWheelColor; kartPosY = wiggledKartPos - wiggleRate; }
 
-        //calculate the current sprite based off of the current torque
-        if(torque < 0.01) { kartAnimationFrame = 0; spriteReversed = 0; }
-        if(torque > -0.01) { kartAnimationFrame = 0; spriteReversed = 0; }
+        if(!hasFinishedRace)
+        {
+            //calculate the current sprite based off of the current torque
+            if(torque < 0.01) { kartAnimationFrame = 0; spriteReversed = 0; }
+            if(torque > -0.01) { kartAnimationFrame = 0; spriteReversed = 0; }
 
-        if(torque > 0.01) { kartAnimationFrame = 1; spriteReversed = 1; }
-        if(torque < -0.01) { kartAnimationFrame = 1; spriteReversed = 0; }
+            if(torque > 0.01) { kartAnimationFrame = 1; spriteReversed = 1; }
+            if(torque < -0.01) { kartAnimationFrame = 1; spriteReversed = 0; }
 
-        if(torque > 0.05) { kartAnimationFrame = 2; spriteReversed = 1; timeAboutToDrift += deltaTime; }
-        if(torque < -0.05) { kartAnimationFrame = 2; spriteReversed = 0; timeAboutToDrift += deltaTime; }
+            if(torque > 0.05) { kartAnimationFrame = 2; spriteReversed = 1; timeAboutToDrift += deltaTime; }
+            if(torque < -0.05) { kartAnimationFrame = 2; spriteReversed = 0; timeAboutToDrift += deltaTime; }
+        }
 
         if(!IsKeyDown(KEY_A) && !IsKeyDown(KEY_D)) { timeAboutToDrift = 0; }
 
@@ -294,7 +297,7 @@ int main(void)
         {
             for (int y = 0; y < kartSize; y++)
             {
-                DrawPixel((kartPosX - halfKartSize) + x, (kartPosY - halfKartSize + kartOffsetYForFinish) + y + (112 + halfKartSize), GetColor(marioSpritesheetColorLookup[marioSpritesheetColorList[kartState * kartSize + y][kartAnimationFrame * kartSize + x + (spriteReversed * kartSize * 11)]]));
+                DrawPixel((kartPosX - (kartSize >> 1)) + x, (kartPosY - (kartSize >> 1) + kartOffsetYForFinish) + y + (112 + (kartSize >> 1)), GetColor(marioSpritesheetColorLookup[marioSpritesheetColorList[kartState * kartSize + y][kartAnimationFrame * kartSize + x + (spriteReversed * kartSize * 11)]]));
             }
         }
 
@@ -309,7 +312,7 @@ int main(void)
                         //left particles
                         DrawPixel(kartPosX + 11 + x + 4 * floor(sinf(accumulatedRotation * 2)), kartPosY + 150 + y + 2 * floor(1 - sinf(accumulatedRotation * 2)), GetColor(particlesColorLookup[particles[y][x]]));
                         //right particles
-                        DrawPixel(256 - (kartPosX + 11 + x + 4 * floor(sinf(accumulatedRotation * 2))), kartPosY + 150 + y + 2 * floor(1 - sinf(accumulatedRotation * 2)), GetColor(particlesColorLookup[particles[y][x]]));
+                        DrawPixel(screenWidth - (kartPosX + 11 + x + 4 * floor(sinf(accumulatedRotation * 2))), kartPosY + 150 + y + 2 * floor(1 - sinf(accumulatedRotation * 2)), GetColor(particlesColorLookup[particles[y][x]]));
                     }
                 }
                
