@@ -3,16 +3,7 @@
 #include <math.h>
 #include <chrono>
 
-#include "mariocircuit-1.h"
-#include "outofbounds.h"
-#include "bg_trees.h"
-#include "bg_hills.h"
-#include "mario_spritesheet.h"
-#include "mariocircuit-1collision.h"
-#include "lap.h"
-#include "particles.h"
-#include "mariocircuit-1checkpoints.h"
-#include "numbers.h"
+#include "textures.h"
 
 //#include make header file that only stores a 2d array of the image (using the color compression)
 using namespace std;
@@ -28,9 +19,6 @@ int main(void)
 
     float h = 315.5f; //yeah its weird but its perfectly centered on the starting line
     float v = 808.0f;
-
-    float finishedH = 0.0f;
-    float finishedV = 0.0f;
 
     float xn = 128.0f + h;
     float yn = 112.0f + v;
@@ -107,7 +95,6 @@ int main(void)
     int wiggledKartPos = kartPosY + wiggleRate;
 
     bool drawDirtParticles = false;
-    bool drawDriftParticles = false;
 
     //lap count
     int currentCheckpoint = 5;
@@ -122,7 +109,6 @@ int main(void)
     float hillTurnSpeed = -50; //multiplier for how fast the hills move (based on angle)
     float treeTurnSpeed = -90; //multiplier for how fast the trees move (based on angle)
     int hillTextureWidth = 768;
-    int treeTextureWidth = 1280;
 
     //initialization
     const int screenWidth = 256;
@@ -157,9 +143,6 @@ int main(void)
         if(torque > maxTorque) { torque = maxTorque; }
         if(torque < -maxTorque) { torque = -maxTorque; }
 
-        //set modAngle
-        modAngle = fmod(angle, 6.28319f);
-
         //calculate these vectors. thank you random man on stackoverflow for this code
         forwardX = sin(angle);
         forwardY = cos(angle);
@@ -192,6 +175,8 @@ int main(void)
         if(currentCheckpointColor == 0x323232ff) { if(currentCheckpoint == 3) { currentCheckpoint = 4; } }
         if(currentCheckpointColor == 0x3c3c3cff) { if(currentCheckpoint == 0) { currentLap--; currentCheckpoint = 5; } { if(currentCheckpoint == 4) { currentCheckpoint = 5; } } }
         
+        cout << currentCheckpoint << " " << currentLap << endl;
+
         if(currentLap == 5)
         {
             if(!hasFinishedRace)
@@ -207,10 +192,10 @@ int main(void)
             {
                 //turn around
                 angle += 0.03f;
+                modAngle = fmod(angle, 6.28319f);
                 if(modAngle < (finishAngle - 3.14159f) + rotationEpsilon && modAngle > (finishAngle - 3.14159f) - rotationEpsilon) { isReversed = true; }
                 kartAnimationFrame = (int)abs(round((finishAngle - angle) / 0.2855995455f));
                 spriteReversed = 0;
-                cout << (int)abs(round((finishAngle - angle) / 0.2855995455f)) << endl;
             }
             else
             {
@@ -319,7 +304,6 @@ int main(void)
         }
 
         //hud
-
         //lap count
         for(int x = 0; x < 32; x++)
         {
