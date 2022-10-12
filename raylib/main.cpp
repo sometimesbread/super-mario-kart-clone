@@ -34,6 +34,7 @@ int main(void)
     //kart physics
 
     float angle = 4.71238897f;
+    float positiveAngle = angle;
     float modAngle = angle;
     float forwardX = 0.0f;
     float forwardY = 0.0f;
@@ -98,7 +99,7 @@ int main(void)
 
     //lap count
     int currentCheckpoint = 5;
-    int currentLap = 1;
+    int currentLap = 4;
     int displayedLap = 1;
 
     //map
@@ -142,10 +143,6 @@ int main(void)
         if(torque < 0.02 && torque > -0.02) { torque = 0.0; } 
         if(torque > maxTorque) { torque = maxTorque; }
         if(torque < -maxTorque) { torque = -maxTorque; }
-
-        //calculate these vectors. thank you random man on stackoverflow for this code
-        forwardX = sin(angle);
-        forwardY = cos(angle);
 
         //collision
         //(0,0,0) = track, (255,255,255) = offroad, (127,127,127) = endline, (90,90,90) = coin, (100,100,100) = wall/bounceback, (200,200,200) = block
@@ -194,27 +191,27 @@ int main(void)
             if(currentCheckpoint == 0) { currentLap--; currentCheckpoint = 5; } if(currentCheckpoint == 4) { currentCheckpoint = 5; }
             break;
         }
-        
-        cout << currentCheckpoint << " " << currentLap << endl;
 
         if(currentLap == 5)
         {
             if(!hasFinishedRace)
             {
                 hasFinishedRace = true;
-                finishAngle = angle;
+                finishAngle = positiveAngle;
             }
             
         }
+
         if(hasFinishedRace)
         {
             if(!isReversed)
             {
                 //turn around
                 angle += 0.03f;
-                modAngle = fmod(angle, 6.28319f);
+                positiveAngle += 0.03f;
+                modAngle = fmod(positiveAngle, 6.28319f);
                 if(modAngle < (finishAngle - 3.14159f) + rotationEpsilon && modAngle > (finishAngle - 3.14159f) - rotationEpsilon) { isReversed = true; }
-                kartAnimationFrame = (int)abs(round((finishAngle - angle) / 0.2855995455f));
+                kartAnimationFrame = (int)abs(round((finishAngle - positiveAngle) / 0.2855995455f));
                 spriteReversed = 0;
             }
             else
@@ -232,6 +229,12 @@ int main(void)
         yn -= forwardY * velocity;
         xn -= forwardX * velocity;
         angle += torque;
+        positiveAngle += torque;
+        if(positiveAngle <= 0) { positiveAngle = 6.28319f; }
+
+        //calculate these vectors. thank you random man on stackoverflow for this code
+        forwardX = sin(angle);
+        forwardY = cos(angle);
 
         BeginDrawing();
             //draw horizon/bg
