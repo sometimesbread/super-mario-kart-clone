@@ -8,6 +8,8 @@
 
 //code
 #include "checkpoints.hpp"
+#include "enums.hpp"
+#include "drawrace.hpp"
 
 using namespace std;
 
@@ -60,23 +62,6 @@ int main(void)
     const float kartCollisionOffset = -0.5f;
 
     //kart drawing
-
-    enum KartState
-    {
-        LOOKBACK = 1,
-        WIN = 2,
-        LOSE = 3,
-        SCALE0 = 4,
-        SCALE1 = 5,
-        SCALE2 = 6,
-        SCALE3 = 7,
-        SCALE4 = 8,
-        SCALE5 = 9,
-        SCALE6 = 10,
-        SCALE7 = 11,
-        SCALE8 = 12,
-        SCALE9 = 13
-    };
 
     int kartPosX = 128;
     int kartPosY = 0;
@@ -169,7 +154,6 @@ int main(void)
 
         //update current checkpoint
         UpdateCheckpoint(currentCheckpointColor, currentCheckpoint, currentLap);
-        cout << currentLap << " " << currentLap << endl;
 
         if(currentLap == 5)
         {
@@ -216,14 +200,7 @@ int main(void)
 
         BeginDrawing();
             //draw horizon/bg
-            for (int y = 0; y < horizonHeight; y++)
-            {
-                for(int x = 0; x < screenWidth; x++)
-                {
-                    DrawPixel(x, y, GetColor(hillsColorLookup[hillsColorList[y][abs(static_cast<int>(x + angle * hillTurnSpeed) % hillTextureWidth)]]));
-                    DrawPixel(x, y, GetColor(treesColorLookup[treesColorList[y][abs(static_cast<int>(x + angle * treeTurnSpeed) % hillTextureWidth)]]));
-                }
-            }
+            DrawHorizon(horizonHeight, screenWidth, angle, treeTurnSpeed, hillTurnSpeed, hillTextureWidth, hillsColorLookup, hillsColorList, treesColorLookup, treesColorList);
 
             //draw track
             for (int y = 0; y < screenHeight - horizonHeight; y++)
