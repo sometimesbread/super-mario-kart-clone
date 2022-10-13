@@ -3,9 +3,12 @@
 #include <math.h>
 #include <chrono>
 
+//textures
 #include "textures.h"
 
-//#include make header file that only stores a 2d array of the image (using the color compression)
+//code
+#include "checkpoints.hpp"
+
 using namespace std;
 
 int main(void)
@@ -165,32 +168,8 @@ int main(void)
         if(currentCollisionColor == 0x646464ff) { velocity = -velocity * 4; }
 
         //update current checkpoint
-        switch(currentCheckpointColor)
-        {
-            case 0xa0a0aff:
-            if(currentCheckpoint == 5 || currentCheckpoint == 1) { currentLap++; currentCheckpoint = 0; }
-            break;
-
-            case 0x141414ff:
-            if(currentCheckpoint == 0 || currentCheckpoint == 2) { currentCheckpoint = 1; }
-            break;
-
-            case 0x1e1e1eff:
-            if(currentCheckpoint == 1 || currentCheckpoint == 3) { currentCheckpoint = 2; }
-            break;
-
-            case 0x282828ff:
-            if(currentCheckpoint == 2 || currentCheckpoint == 4) { currentCheckpoint = 3; }
-            break;
-
-            case 0x323232ff:
-            if(currentCheckpoint == 3 || currentCheckpoint == 5) { currentCheckpoint = 4; }
-            break;
-
-            case 0x3c3c3cff:
-            if(currentCheckpoint == 0) { currentLap--; currentCheckpoint = 5; } if(currentCheckpoint == 4) { currentCheckpoint = 5; }
-            break;
-        }
+        UpdateCheckpoint(currentCheckpointColor, currentCheckpoint, currentLap);
+        cout << currentLap << " " << currentLap << endl;
 
         if(currentLap == 5)
         {
@@ -198,8 +177,7 @@ int main(void)
             {
                 hasFinishedRace = true;
                 finishAngle = positiveAngle;
-            }
-            
+            }       
         }
 
         if(hasFinishedRace)
