@@ -16,9 +16,6 @@ using namespace std;
 int main(void)
 {
     //mode 7 transformations
-    int xPrime = 0;
-    int yPrime = 0;
-
     float a = 1.0f;
     float b = 0.0f;
 
@@ -172,12 +169,13 @@ int main(void)
                 angle += 0.03f;
                 positiveAngle += 0.03f;
                 modAngle = fmod(positiveAngle, 6.28319f);
-                if(modAngle < (finishAngle - 3.14159f) + rotationEpsilon && modAngle > (finishAngle - 3.14159f) - rotationEpsilon) { isReversed = true; }
+                if((modAngle < (finishAngle - 3.14159f) + rotationEpsilon && modAngle > (finishAngle - 3.14159f) - rotationEpsilon) || kartAnimationFrame == 12) { isReversed = true; }
                 kartAnimationFrame = (int)abs(round((finishAngle - positiveAngle) / 0.2855995455f));
                 spriteReversed = 0;
             }
             else
             {
+                kartAnimationFrame = 11;
                 //rise into air
                 kartOffsetYForFinish -= 3;
             }
@@ -199,41 +197,10 @@ int main(void)
         forwardY = cos(angle);
 
         BeginDrawing();
-            //draw horizon/bg
-            DrawHorizon(horizonHeight, screenWidth, angle, treeTurnSpeed, hillTurnSpeed, hillTextureWidth, hillsColorLookup, hillsColorList, treesColorLookup, treesColorList);
+        //draw horizon/bg
+        DrawHorizon(horizonHeight, screenWidth, angle, treeTurnSpeed, hillTurnSpeed, hillTextureWidth, hillsColorLookup, hillsColorList, treesColorLookup, treesColorList);
 
-            //draw track
-            for (int y = 0; y < screenHeight - horizonHeight; y++)
-            { 
-                //calculate depth
-                float scl = aChange / screenHeight / (y+1);
-                //float scl = 1;
-                a = scl * forwardY * mapScaling; //using forwardY because it is already calculated and calculating cos and sin again is a waste
-                b = scl * forwardX * mapScaling;
-
-                //calculate the "bases" of xprime and yprime so i dont murder the cpu
-                float xPrimebase = a * (h - xn) + b * (y +  v - yn) + xn;
-                float yPrimebase = -b * (h - xn) + a * (y + v - yn) + yn;
-
-                for (int x = 0; x < screenWidth; x++)
-                {
-                    xPrime = floor(xPrimebase + a * x);
-                    yPrime = floor(yPrimebase + -b * x);
-
-                    //check if the current pixel is in the map, and draw the map texture if it is. if it not, draw the repeating texture
-                    if(xPrime < 1024 && xPrime > 0 && yPrime > 0 && yPrime < 1024)
-                    {
-                        DrawPixel(x, y + horizonHeight, GetColor(mariocircuit1ColorLookup[mariocircuit1ColorList[xPrime][yPrime]]));
-
-                        //show collision map instead of color map (debug)
-                        //DrawPixel(x, y + horizonHeight, GetColor(mariocircuit1CollisionColorLookup[mariocircuit1CollisionColorList[128 - (int)floor(xPrime / 8)][128 - (int)floor(yPrime / 8)]]));
-                    }
-                    else
-                    {
-                        DrawPixel(x, y + horizonHeight, GetColor(outOfBoundsColorLookup[outOfBoundsColorList[abs(xPrime) % 8][abs(yPrime) % 8]]));
-                    }
-                }
-            }
+        DrawTrack(screenHeight, horizonHeight, mapScaling, screenWidth, a, b, h, v, xn, yn, aChange, forwardX, forwardY);
 
         //draw kart
 
